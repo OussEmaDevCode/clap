@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js" type="text/javascript"></script>
+    <meta charset="UTF-8">
+    <title>Noisy</title>
+    <style>
+        body {
+            background-color: black;
+            font-family: 'Roboto', sans-serif;
+            text-align: center;
+        }
+        h1 {
+            color: white;
+            font-size: 8em;
+        }
+        video {
+            position: absolute;
+            left: 25vw;
+            top: 0px;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1>Clap</h1>
+    <video id="video" style="opacity: 0;" width="640" height="480">
+        <source src="mariachi.mp4" type="video/mp4">
+        Sorry the website doesn't work in your browser
+    </video>
+</div>
+
+<script>
+    let video = document.getElementById("video");
+
+    const handleSuccess = function(stream) {
+        const context = new AudioContext();
+        const source = context.createMediaStreamSource(stream);
+        const processor = context.createScriptProcessor(1024, 1, 1);
+
+        source.connect(processor);
+        processor.connect(context.destination);
+
+        processor.onaudioprocess = function(event) {
+            const input = event.inputBuffer.getChannelData(0);
+            let sum = 0.0;
+            let instant = 0.0;
+            let clipcount = 0;
+
+            for (let i = 0; i < input.length; ++i) {
+                sum += input[i] * input[i];
+                if (Math.abs(input[i]) > 0.99) {
+                    clipcount += 1;
+                }
+            }
+            instant = Math.sqrt(sum / input.length) * 200;
+
+            if (instant > 50 && video.paused) {
+                video.play();
+            }
+
+            if (video.paused) {
+                video.style.opacity = "0";
+            } else {
+                video.style.opacity = "1";
+            }
+
+            console.log(Math.round(instant));
+
+        };
+    };
+
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(handleSuccess);
+</script>
+</body>
+</html>
